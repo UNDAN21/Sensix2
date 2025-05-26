@@ -1,0 +1,588 @@
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   DX PORSTY V9 &amp; APX DAX - Interactive with Login
+  </title>
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+    @font-face {
+      font-family: 'DXLogo';
+      src: local('Arial Black'), local('Arial Bold'), local('Arial');
+      font-weight: 900;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0; padding: 0; overflow-x: hidden;
+      background-color: #121212;
+      color: #d1d5db; /* gray-300 */
+      position: relative;
+      min-height: 100vh;
+    }
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      background-color: #121212;
+    }
+    /* container of content above particles */
+    #app-container {
+      position: relative;
+      z-index: 10;
+    }
+    /* Canvas container size control */
+    .max-w-md {
+      max-width: 450px;
+    }
+    /* Feature usefulness text styling */
+    .usefulness {
+      color: #9ca3af; /* gray-400 */
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    /* Scrollbar for status box if overflow */
+    #statusBox {
+      max-height: 7rem;
+      overflow-y: auto;
+    }
+    /* Login overlay styles */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 18, 18, 0.95);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #login-box {
+      background: rgba(30, 30, 30, 0.95);
+      border-radius: 1rem;
+      padding: 2rem 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+    #login-box h2 {
+      color: white;
+      font-weight: 700;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-family: 'Roboto', sans-serif;
+      letter-spacing: 0.05em;
+    }
+    #login-error {
+      color: #f87171; /* red-400 */
+      font-weight: 600;
+      margin-top: 0.5rem;
+      text-align: center;
+      min-height: 1.25rem;
+    }
+    /* Inputs and button */
+    #loginForm input {
+      background: rgba(255 255 255 / 0.1);
+      border: 1px solid rgba(255 255 255 / 0.3);
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      width: 100%;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+    #loginForm input:focus {
+      outline: none;
+      border-color: #ec4899; /* pink-500 */
+      background: rgba(255 255 255 / 0.15);
+    }
+    #loginForm button {
+      background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+      color: white;
+      font-weight: 700;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      width: 100%;
+      margin-top: 1.25rem;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ec4899;
+      transition: box-shadow 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 1.125rem;
+    }
+    #loginForm button:hover {
+      box-shadow: 0 0 20px #ec4899;
+    }
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      #login-box {
+        padding: 1.5rem 1.75rem;
+      }
+      #login-box h2 {
+        font-size: 1.5rem;
+      }
+      #loginForm button {
+        font-size: 1rem;
+      }
+    }
+  </style>
+ </head>
+ <body>
+  <canvas id="particle-canvas">
+  </canvas>
+  <div aria-labelledby="loginTitle" aria-modal="true" id="login-overlay" role="dialog">
+   <div id="login-box">
+    <h2 id="loginTitle">
+     User Login
+    </h2>
+    <form autocomplete="off" id="loginForm" novalidate="">
+     <label class="sr-only" for="username">
+      Username
+     </label>
+     <input aria-required="true" autocomplete="username" id="username" name="username" placeholder="Username" required="" type="text"/>
+     <label class="sr-only" for="password">
+      Password
+     </label>
+     <input aria-required="true" autocomplete="current-password" id="password" name="password" placeholder="Password" required="" type="password"/>
+     <button aria-label="Login button" type="submit">
+      <i class="fas fa-sign-in-alt">
+      </i>
+      Login
+     </button>
+     <div aria-live="assertive" id="login-error" role="alert">
+     </div>
+    </form>
+   </div>
+  </div>
+  <div class="min-h-screen flex justify-center p-4" id="app-container" style="display:none;">
+   <div class="w-full max-w-md space-y-4">
+    <!-- Header -->
+    <header class="bg-[#1E1E1E] rounded-xl p-4 flex justify-between items-center">
+     <div class="flex items-center space-x-3">
+      <div class="text-white font-DXLogo text-3xl select-none" style="font-family: 'DXLogo', Arial, sans-serif;">
+       DX
+      </div>
+      <div>
+       <div class="font-semibold text-white text-sm">
+        APX DRAX V4.0
+       </div>
+       <div class="text-xs text-gray-400">
+        com.dx.porsty.v9
+       </div>
+      </div>
+     </div>
+     <div class="text-white font-semibold text-sm text-right">
+      <div>
+       V9.0
+      </div>
+      <div class="text-gray-400 text-xs">
+       Hello, pengguna sensix arda
+      </div>
+     </div>
+    </header>
+    <!-- Tabs -->
+    <nav class="bg-[#1E1E1E] rounded-xl flex justify-between text-gray-400 text-sm font-normal select-none">
+     <button aria-controls="sensitivity" class="flex-1 py-3" id="sensitivityTab" onclick="showTab('sensitivity')">
+      Sensitivity
+     </button>
+     <button aria-controls="shizuku" class="flex-1 py-3" id="shizukuTab" onclick="showTab('shizuku')">
+      Shizuku
+     </button>
+     <button aria-controls="headtrick" class="flex-1 py-3" id="headtrickTab" onclick="showTab('headtrick')">
+      Headtrick
+     </button>
+    </nav>
+    <!-- Sensitivity Section -->
+    <section aria-labelledby="sensitivityTab" class="tab-content space-y-4" id="sensitivity" role="tabpanel" tabindex="0">
+     <!-- Sensitivity (PPI) -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 space-y-2 flex items-center">
+      <i aria-hidden="true" class="fas fa-hand-point-up fa-lg text-white mr-3 flex-shrink-0">
+      </i>
+      <div class="flex-1">
+       <h3 class="font-semibold text-white text-sm">
+        Sensitivity (PPI)
+       </h3>
+       <p class="text-xs text-gray-400 leading-tight">
+        Sensitivity (PPI) menentukan respons sentuhan berdasarkan kepadatan piksel layar. PPI tinggi lebih tajam, tapi bisa memengaruhi sensitivitas, terutama dalam gaming.
+       </p>
+       <p class="usefulness">
+        <strong>
+         Kegunaan:
+        </strong>
+        Memungkinkan pengaturan respons layar sentuh agar sesuai dengan kebutuhan game, meningkatkan akurasi dan kontrol gerakan.
+       </p>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer ml-3">
+       <input aria-label="Toggle Sensitivity PPI" class="sr-only peer" id="ppiToggle" type="checkbox"/>
+       <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-white peer-checked:after:translate-x-full peer-checked:after:border-gray-700 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#121212] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all">
+       </div>
+      </label>
+     </article>
+     <!-- Touch Pointer -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 space-y-3">
+      <div class="flex items-start space-x-3">
+       <i aria-hidden="true" class="fas fa-hand-pointer fa-lg mt-1 text-white">
+       </i>
+       <div>
+        <h3 class="font-semibold text-white text-sm">
+         Touch Pointer
+        </h3>
+        <p class="text-xs text-gray-400 max-w-[280px] leading-tight">
+         Fitur yang mendeteksi titik sentuhan di layar, memungkinkan interaksi seperti tap, swipe, dan multi-touch pada perangkat layar sentuh.
+        </p>
+        <p class="usefulness">
+         <strong>
+          Kegunaan:
+         </strong>
+         Membantu pengguna mengatur sensitivitas pointer sentuhan agar pengalaman bermain lebih responsif dan nyaman.
+        </p>
+       </div>
+      </div>
+      <input aria-label="Touch Pointer sensitivity" aria-valuemax="100" aria-valuemin="0" aria-valuenow="30" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" id="touchPointerRange" max="100" min="0" type="range" value="30"/>
+     </article>
+     <!-- Touch Pressure -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 space-y-3">
+      <div class="flex items-start space-x-3">
+       <i aria-hidden="true" class="fas fa-hand-paper fa-lg mt-1 text-white">
+       </i>
+       <div>
+        <h3 class="font-semibold text-white text-sm">
+         Touch Pressure
+        </h3>
+        <p class="text-xs text-gray-400 max-w-[280px] leading-tight">
+         Fitur ini berguna untuk menyesuaikan responsivitas interaksi sentuhan pada perangkat.
+        </p>
+        <p class="usefulness">
+         <strong>
+          Kegunaan:
+         </strong>
+         Menyesuaikan tekanan sentuhan supaya dapat meningkatkan kontrol terhadap berbagai macam jenis interaksi sentuh.
+        </p>
+       </div>
+      </div>
+      <input aria-label="Touch Pressure sensitivity" aria-valuemax="100" aria-valuemin="0" aria-valuenow="70" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" id="touchPressureRange" max="100" min="0" type="range" value="70"/>
+     </article>
+     <!-- Booster Freefire -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 space-y-2 flex items-center">
+      <svg aria-hidden="true" aria-label="Booster icon" class="w-6 h-6 text-white mr-3 flex-shrink-0" fill="currentColor" role="img" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+       <path d="M12 2C11.4477 2 11 2.44772 11 3V6.58579L7.70711 9.87868C7.31658 10.2692 7.31658 10.9024 7.70711 11.2929L10.2929 13.8787C10.6834 14.2692 11.3166 14.2692 11.7071 13.8787L15 10.5858V14C15 14.5523 15.4477 15 16 15C16.5523 15 17 14.5523 17 14V7C17 6.44772 16.5523 6 16 6H9C8.44772 6 8 6.44772 8 7C8 7.55228 8.44772 8 9 8H13.4142L10.7071 10.7071L7 7V3C7 2.44772 7.44772 2 8 2H12Z">
+       </path>
+       <path d="M3 21C3 19.3431 4.34315 18 6 18H18C19.6569 18 21 19.3431 21 21V22H3V21Z">
+       </path>
+      </svg>
+      <div class="flex-1">
+       <h3 class="font-semibold text-white text-sm">
+        Booster Freefire
+       </h3>
+       <p class="text-xs text-gray-400 leading-tight">
+        Fitur ini dapat membooster game freefire kalian, dan menutup aplikasi google agar tidak berjalan di katar belakang fitur ini berguna agar saat bermain game dapat mengurangi lag dan boost fps.
+       </p>
+       <p class="usefulness">
+        <strong>
+         Kegunaan:
+        </strong>
+        Mempercepat performa permainan dengan mengoptimalkan penggunaan sumber daya dan mengurangi latensi.
+       </p>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer ml-3">
+       <input aria-label="Toggle Booster Freefire" class="sr-only peer" id="boosterToggle" type="checkbox"/>
+       <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-white peer-checked:after:translate-x-full peer-checked:after:border-gray-700 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#121212] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all">
+       </div>
+      </label>
+     </article>
+    </section>
+    <!-- Shizuku Section -->
+    <section aria-labelledby="shizukuTab" class="tab-content hidden space-y-6 flex flex-col items-center justify-center" id="shizuku" role="tabpanel" tabindex="0">
+     <img alt="Illustration of a futuristic system connection with glowing network nodes and digital interface" class="w-32 h-32 mb-4" height="128" src="https://storage.googleapis.com/a1aa/image/582da782-9aa8-437d-762e-0f82b09c87ae.jpg" width="128"/>
+     <p class="text-center text-gray-300 text-sm max-w-xs mb-4">
+      Hubungkan aplikasi ini dengan <a class="text-pink-500 underline" href="https://github.com/RikkaApps/Shizuku" rel="noopener noreferrer" target="_blank">Shizuku resmi di GitHub</a> atau <a class="text-pink-500 underline" href="https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api" rel="noopener noreferrer" target="_blank">Play Store</a> untuk mengaktifkan fitur sistem.
+     </p>
+     <button aria-label="Connect to Shizuku system" class="bg-gradient-to-r from-pink-500 via-purple-600 to-blue-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-2xl transition-shadow flex items-center gap-2" id="connectSystemBtn" type="button">
+      <i class="fas fa-plug">
+      </i>
+      Connect to Shizuku
+     </button>
+     <p class="text-green-400 text-sm mt-3 hidden" id="connectSuccessMsg">
+      Terhubung ke sistem Shizuku dengan sukses!
+     </p>
+     <p class="text-red-500 text-sm mt-3 hidden" id="connectErrorMsg">
+      Gagal terhubung ke sistem Shizuku. Pastikan aplikasi Shizuku sudah terpasang dan aktif.
+     </p>
+    </section>
+    <!-- Headtrick Section -->
+    <section aria-labelledby="headtrickTab" class="tab-content hidden space-y-4" id="headtrick" role="tabpanel" tabindex="0">
+     <!-- Item 1 -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 flex items-start space-x-4">
+      <div class="pt-1 text-white text-xl">
+       <i aria-hidden="true" class="fas fa-user-circle">
+       </i>
+      </div>
+      <div class="flex-1">
+       <h3 class="text-white font-semibold text-sm leading-5">
+        Aim Tracking
+       </h3>
+       <p class="text-gray-300 text-xs leading-4 mt-1 max-w-[calc(100%-48px)]">
+        Meningkatkan accuracy senjata dan meningkatkan peluru untuk mendapatkan peluang lebih besar untuk mengenai musuh.
+       </p>
+       <p class="usefulness">
+        <strong>
+         Kegunaan:
+        </strong>
+        Membantu meningkatkan fokus dan presisi tembakan sehingga peluang kemenangan game bertambah.
+       </p>
+      </div>
+      <div class="pt-1">
+       <label class="relative inline-flex items-center cursor-pointer">
+        <input aria-label="Toggle Aim Tracking" class="sr-only peer" id="aimTracking" type="checkbox"/>
+        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-white peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#121212] after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all">
+        </div>
+       </label>
+      </div>
+     </article>
+     <!-- Item 2 -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 flex items-start space-x-4">
+      <div class="pt-1 text-white text-xl">
+       <i aria-hidden="true" class="fas fa-user-circle">
+       </i>
+      </div>
+      <div class="flex-1">
+       <h3 class="text-white font-semibold text-sm leading-5">
+        Adjust penetrasi head
+       </h3>
+       <p class="text-gray-300 text-xs leading-4 mt-1 max-w-[calc(100%-48px)]">
+        Meningkatkan Akurasi senjata saat menembak untuk mendapatkan bidikan yang sempurna! (not hack).
+       </p>
+       <p class="usefulness">
+        <strong>
+         Kegunaan:
+        </strong>
+        Memperbesar peluang headshot sehingga serangan menjadi lebih efektif dalam pertandingan.
+       </p>
+      </div>
+      <div class="pt-1">
+       <label class="relative inline-flex items-center cursor-pointer">
+        <input aria-label="Toggle Adjust penetrasi head" class="sr-only peer" id="adjustPenetrasi" type="checkbox"/>
+        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-white peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#121212] after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all">
+        </div>
+       </label>
+      </div>
+     </article>
+     <!-- Item 3 -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 flex items-start space-x-4">
+      <div class="pt-1 text-white text-xl rotate-[-20deg]">
+       <i aria-hidden="true" class="fas fa-hand-point-up">
+       </i>
+      </div>
+      <div class="flex-1">
+       <h3 class="text-white font-semibold text-sm leading-5">
+        HeadTrack
+       </h3>
+       <p class="text-gray-300 text-xs leading-4 mt-1 max-w-[calc(100%-48px)]">
+        Meningkatkan Akurasi saat menembak untuk mendapatkan kepala musuh! (not hack).
+       </p>
+       <p class="usefulness">
+        <strong>
+         Kegunaan:
+        </strong>
+        Mempermudah menarget kepala musuh untuk damage maksimal tanpa perlu usaha ekstra.
+       </p>
+      </div>
+      <div class="pt-1">
+       <label class="relative inline-flex items-center cursor-pointer">
+        <input aria-label="Toggle HeadTrack" class="sr-only peer" id="headTrack" type="checkbox"/>
+        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-white peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#121212] after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all">
+        </div>
+       </label>
+      </div>
+     </article>
+     <!-- Item 4 -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 flex items-start space-x-4">
+      <div class="pt-1 text-white text-xl">
+       <i aria-hidden="true" class="fas fa-signal">
+       </i>
+      </div>
+      <div class="flex-1">
+       <h3 class="text-white font-semibold text-sm leading-5">
+        Adjust Weapon Trick SG2
+       </h3>
+       <p class="text-gray-300 text-xs leading-4 mt-1 max-w-[calc(100%-48px)]">
+        Meningkatkan Akurasi senjata m1887 saat menembak untuk mendapatkan bidikan yang sempurna! (not hack).
+       </p>
+       <p class="usefulness">
+        <strong>
+         Kegunaan:
+        </strong>
+        Membantu menangani senjata SG2 dengan lebih presisi untuk hasil tembakan optimal.
+       </p>
+      </div>
+      <div class="pt-1">
+       <label class="relative inline-flex items-center cursor-pointer">
+        <input aria-label="Toggle Adjust Weapon Trick SG2" class="sr-only peer" id="weaponTrickSG2" type="checkbox"/>
+        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-white peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#121212] after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all">
+        </div>
+       </label>
+      </div>
+     </article>
+     <!-- Item 5 -->
+     <article class="bg-[#1E1E1E] rounded-xl p-4 flex items-start space-x-4">
+      <div class="pt-1 text-white text-xl">
+       <i aria-hidden="true" class="fas fa-signal">
+       </i>
+      </div>
+      <div class="flex-1">
+       <h3 class="text-white font-semibold text-sm leading-5">
+        Adjust Weapon Trick SMG
+       </h3>
+       <p class="text-gray-300 text-xs leading-4 mt-1 max-w-[calc(100%-48px)]">
+        Meningkatkan Akurasi senjata SMG saat menembak untuk mendapatkan bidikan yang sempurna! (not hack).
+       </p>
+       <p class="usefulness">
+        <strong>
+         Kegunaan:
+        </strong>
+        Optimalisasi kontrol dan akurasi senjata SMG untuk performa tempur cepat dan efektif.
+       </p>
+      </div>
+      <div class="pt-1">
+       <label class="relative inline-flex items-center cursor-pointer">
+        <input aria-label="Toggle Adjust Weapon Trick SMG" class="sr-only peer" id="weaponTrickSMG" type="checkbox"/>
+        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-white peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#121212] after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all">
+        </div>
+       </label>
+      </div>
+     </article>
+     <!-- Status Box -->
+     <div class="bg-[#1E1E1E] rounded-xl p-4 mt-6 text-gray-300 text-sm min-h-[4rem] max-h-28 overflow-y-auto" id="statusBox">
+      <p class="font-semibold text-white mb-2">
+       Status:
+      </p>
+      <ul class="list-disc list-inside space-y-1" id="statusList">
+      </ul>
+      <p class="text-gray-500" id="noSelection">
+       Tidak ada fitur yang diaktifkan.
+      </p>
+     </div>
+    </section>
+   </div>
+  </div>
+  <script>
+   // Show selected tab and highlight
+  function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      tab.classList.add('hidden');
+    });
+    document.getElementById(tabName).classList.remove('hidden');
+
+    // Reset tab button colors
+    ['sensitivityTab', 'shizukuTab', 'headtrickTab'].forEach(id => {
+      document.getElementById(id).classList.remove('text-white', 'font-semibold');
+      document.getElementById(id).classList.add('text-gray-400');
+    });
+    // Highlight active tab
+    const activeTab = tabName + 'Tab';
+    const tabBtn = document.getElementById(activeTab);
+    tabBtn.classList.add('text-white', 'font-semibold');
+  }
+
+  // Initialize with sensitivity tab visible
+  showTab('sensitivity');
+
+  // Event listeners for sensitivity toggles and ranges
+  document.getElementById('ppiToggle').addEventListener('change', e => {
+    console.log("Sensitivity (PPI) is " + (e.target.checked ? "enabled" : "disabled"));
+  });
+  document.getElementById('touchPointerRange').addEventListener('input', e => {
+    console.log("Touch Pointer set to " + e.target.value);
+  });
+  document.getElementById('touchPressureRange').addEventListener('input', e => {
+    console.log("Touch Pressure set to " + e.target.value);
+  });
+  document.getElementById('boosterToggle').addEventListener('change', e => {
+    console.log("Booster Freefire is " + (e.target.checked ? "enabled" : "disabled"));
+  });
+
+  // Event listeners for Headtrick toggles
+  ['aimTracking', 'adjustPenetrasi', 'headTrack', 'weaponTrickSG2', 'weaponTrickSMG'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) {
+      el.addEventListener('change', e => {
+        console.log(`${id} is ${e.target.checked ? "enabled" : "disabled"}`);
+      });
+    }
+  });
+
+  // Login form handling (example)
+  const loginOverlay = document.getElementById('login-overlay');
+  const appContainer = document.getElementById('app-container');
+  const loginForm = document.getElementById('loginForm');
+  const loginError = document.getElementById('login-error');
+
+  loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value.trim();
+
+    if(username === '' || password === '') {
+      loginError.textContent = 'Username dan password harus diisi.';
+      return;
+    }
+    // Dummy login success
+    loginError.textContent = '';
+    loginOverlay.style.display = 'none';
+    appContainer.style.display = 'flex';
+  });
+
+  // Connect to Shizuku system button logic
+  const connectBtn = document.getElementById('connectSystemBtn');
+  const successMsg = document.getElementById('connectSuccessMsg');
+  const errorMsg = document.getElementById('connectErrorMsg');
+
+  connectBtn.addEventListener('click', async () => {
+    successMsg.classList.add('hidden');
+    errorMsg.classList.add('hidden');
+    connectBtn.disabled = true;
+    connectBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    try {
+      // Check if Shizuku is available via its AIDL service
+      // This is a placeholder for actual Shizuku connection logic,
+      // which requires Android environment and native code.
+      // Here we simulate a connection attempt.
+
+      // Simulate async connection delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Simulate success (in real app, check actual connection)
+      const shizukuAvailable = true; // Change to false to simulate failure
+
+      if (shizukuAvailable) {
+        successMsg.classList.remove('hidden');
+        errorMsg.classList.add('hidden');
+        console.log("Connected to Shizuku system successfully.");
+      } else {
+        throw new Error("Shizuku not available");
+      }
+    } catch (err) {
+      errorMsg.classList.remove('hidden');
+      successMsg.classList.add('hidden');
+      console.error("Failed to connect to Shizuku system:", err);
+    } finally {
+      connectBtn.disabled = false;
+      connectBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  });
+  </script>
+ </body>
+</html>
